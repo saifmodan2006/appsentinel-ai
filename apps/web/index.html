@@ -20,6 +20,7 @@
       <nav id="navigation" aria-label="Main navigation">
         <div class="nav-group">
           <span class="nav-label">Workspace</span>
+          <a href="#home"><span class="icon icon-file-search" aria-hidden="true"></span>Home</a>
           <a href="#dashboard"><span class="icon icon-layout-dashboard" aria-hidden="true"></span>Overview</a>
           <a href="#upload"><span class="icon icon-scan-line" aria-hidden="true"></span>New scan</a>
           <a href="#history"><span class="icon icon-history" aria-hidden="true"></span>Scan history</a>
@@ -45,7 +46,7 @@
           <button id="nav-toggle" class="quiet nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">
             <span class="icon icon-menu" aria-hidden="true"></span><span class="sr-only">Navigation</span>
           </button>
-          <a class="brand public-brand" href="#dashboard" aria-label="AppTrust Sentinel home">
+          <a class="brand public-brand" href="#home" aria-label="AppTrust Sentinel home">
             <span class="brand-mark" aria-hidden="true"><span></span></span>
             <span>AppTrust <strong>Sentinel</strong></span>
           </a>
@@ -53,10 +54,32 @@
         </div>
         <div class="topbar-end">
           <span class="worker-health"><span class="indicator" id="worker-dot" aria-hidden="true"></span><span id="worker-status" role="status">Checking scanner</span></span>
+          <a id="public-access" class="quiet" href="#signin">Sign in</a>
           <button id="logout" type="button" class="quiet" hidden><span class="icon icon-log-out" aria-hidden="true"></span>Sign out</button>
         </div>
       </header>
-      <main id="content" tabindex="-1"></main>
+      <main id="content" tabindex="-1">
+        <div class="home-grid">
+          <section class="home-intro" aria-labelledby="home-title">
+            <h1 id="home-title">Know what’s inside an Android app.</h1>
+            <p class="home-lede">Inspect APK signatures, publisher records, and permission requests before you install or distribute an app.</p>
+            <a id="home-scan" class="btn" href="#signin?next=upload"><span class="icon icon-scan-line" aria-hidden="true"></span>Start a scan</a>
+          </section>
+          <section class="panel home-workflow" aria-labelledby="workflow-title">
+            <h2 id="workflow-title">How a scan works</h2>
+            <ol>
+              <li><strong>Upload an APK</strong><p>Choose an Android package you’re authorized to inspect.</p></li>
+              <li><strong>Review the findings</strong><p>Read the assessment and the evidence behind each result.</p></li>
+              <li><strong>Keep a report</strong><p>Export a PDF or JSON report from your private scan history.</p></li>
+            </ol>
+          </section>
+        </div>
+        <section class="capabilities" aria-label="Checks and privacy">
+          <div class="capability"><span class="icon icon-badge-check" aria-hidden="true"></span><div><h2>Signature verification</h2><p>Compare verified signers with trusted publisher records.</p></div></div>
+          <div class="capability"><span class="icon icon-file-search" aria-hidden="true"></span><div><h2>Static analysis</h2><p>Inspect permissions and code indicators without running the app.</p></div></div>
+          <div class="capability"><span class="icon icon-lock-keyhole" aria-hidden="true"></span><div><h2>Private reports</h2><p>Uploads are deleted after analysis. Reports stay with your account.</p></div></div>
+        </section>
+      </main>
     </div>
   </div>
 </body>

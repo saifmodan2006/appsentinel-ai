@@ -2,7 +2,9 @@
 
 Sentinel is an Android APK analysis console. Its graphite text, off-white surfaces, evergreen actions, and compact scan mark establish the workspace’s identity. Scan counts sit in a single ledger and come from the API. Risk and publisher assessments lead the report, followed by findings and technical inventory.
 
-The sidebar becomes a disclosure on narrow screens. Escape closes it and returns focus to the navigation button. Findings, statuses, and charts use text alongside color. The welcome screen explains the checks and puts sign-in before the capability list on phones.
+The root URL is the public home, including for signed-in visitors. It explains what Sentinel checks and how a scan works. Sign-in and registration have separate routes. A visitor who starts a scan can continue to APK intake after authentication.
+
+The sidebar becomes a disclosure on narrow screens. Escape closes it and returns focus to the navigation button. Findings, statuses, and charts use text alongside color.
 
 ## References for coding agents
 
@@ -11,6 +13,7 @@ Use the [repository’s Sentinel design skill](../.agents/skills/sentinel-design
 - [Anthropic Frontend Design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) covers purposeful typography, layout, and critique.
 - [OpenAI Frontend App Builder](https://github.com/openai/plugins/blob/main/plugins/build-web-apps/skills/frontend-app-builder/SKILL.md) covers implementation review and browser verification.
 - [USWDS File input](https://designsystem.digital.gov/components/file-input/) explains accessible file selection and feedback.
+- [USWDS landing page](https://designsystem.digital.gov/templates/landing-page/) and [authentication pages](https://designsystem.digital.gov/templates/authentication-pages/) provide guidance for the two entry experiences.
 - [Carbon alert palettes](https://www.carbondesignsystem.com/building-blocks/data-visualization/color-palettes) describe the role of semantic alert colors.
 
 The site bundles Geist 1.9.2 and selected Lucide 1.77.0 glyphs. The web asset directory includes their license notices. [Geist license](https://github.com/vercel/geist-font/blob/main/OFL.txt) · [Lucide license](https://github.com/lucide-icons/lucide/blob/main/LICENSE)

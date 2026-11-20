@@ -28,7 +28,7 @@ The fixture builder compiles a binary manifest with Android AAPT and signs the a
 
 The Python tests cover owner-scoped sessions and exports, empty and oversized uploads, archive validation and limits, duplicate intake, cancellation, worker failures and time limits, binary manifest and signer extraction, reference match and mismatch, catalog revocation, rules and risk uncertainty, PDF and JSON, icon hashing, threat records, and temporal model pipeline integrity. Numerical training fixtures verify the evaluation implementation. They are unrelated to real Android applications and provide no deployed performance evidence.
 
-The browser tests cover keyboard navigation, empty states, a real signed upload through the file chooser, worker completion, displayed findings, PDF and JSON, history search, mobile menu focus, the business calculator, and sign-out access control. A 320-pixel viewport check verifies that sign-in appears before the capability list and the layout stays within the viewport.
+The browser tests cover public home, separate account routes, continuation to APK intake after registration, keyboard navigation, a real signed upload, displayed findings, PDF and JSON exports, history, and sign-out access control. The narrow-screen test checks that a signed-out dashboard link shows home and requires an explicit sign-in action.
 
 ## Benchmark
 

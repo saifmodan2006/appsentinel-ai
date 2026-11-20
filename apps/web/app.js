@@ -1,8 +1,10 @@
 const content = document.getElementById("content");
+const homeMarkup = content.innerHTML;
 const navigation = document.getElementById("navigation");
 const sidebar = document.getElementById("sidebar");
 const navToggle = document.getElementById("nav-toggle");
 const logoutButton = document.getElementById("logout");
+const publicAccess = document.getElementById("public-access");
 const apiBase = "/api/v1";
 const routeNames = {
   dashboard:"Overview", upload:"New APK scan", history:"Scan history", compare:"Compare scans",
@@ -15,7 +17,7 @@ const labels = {
   possible_impersonation:"Possible impersonation", unverified_identity:"Unverified identity",
   insufficient_evidence:"Insufficient evidence",
 };
-const state = {user:null, generation:0, history:{offset:0, q:"", status:"", sort:"newest"}};
+const state = {user:null, sessionReady:false, generation:0, history:{offset:0, q:"", status:"", sort:"newest"}};
 let timer;
 const $ = (selector) => content.querySelector(selector);
 const h = (value) => String(value ?? "Unavailable").replace(/[&<>"']/g, (c) =>
@@ -76,33 +78,19 @@ function go(hash) {
   else location.hash = hash;
 }
 
-function auth(generation) {
-  const capability = (symbol, title, description) => '<div class="capability">' + icon(symbol) +
-    '<div><h2>' + title + '</h2><p class="muted">' + description + '</p></div></div>';
-  mount('<div class="welcome-grid"><section class="welcome-intro"><h1>Know what’s inside an Android app.</h1>' +
-    '<p class="welcome-lede">Inspect APK signatures, publisher records, and permission requests before you install or distribute an app.</p></section>' +
-    '<section class="panel welcome-card" aria-labelledby="auth-title">' +
-    '<h2 id="auth-title">Sign in</h2><p class="muted auth-subtitle" id="auth-subtitle">Access your private scans and reports.</p>' +
+function auth(generation, register, next) {
+  const title = register ? "Create an account" : "Sign in";
+  const description = register ? "Create a workspace account to save scans and reports." : "Access your private scans and reports.";
+  const alternate = (register ? "#signin" : "#register") + "?next=" + encodeURIComponent(next);
+  mount('<section class="panel auth-card" aria-labelledby="auth-title">' +
+    '<h1 id="auth-title">' + title + '</h1><p class="muted auth-subtitle">' + description + '</p>' +
     '<form id="auth"><label>Email<input required type="email" name="email" autocomplete="username" maxlength="254" autocapitalize="none" spellcheck="false"></label>' +
-    '<label>Password<input required type="password" name="password" minlength="12" maxlength="128" autocomplete="current-password"></label>' +
-    '<button class="btn" type="submit" id="auth-submit">Sign in</button>' + statusLine + '</form>' +
-    '<div class="auth-footer"><span id="auth-prompt">New to this workspace?</span> <button class="text-button" type="button" id="auth-mode">Create an account</button></div>' +
-    '</section><section class="capabilities" aria-label="Checks and privacy">' +
-    capability("badge-check", "Signature verification", "Compare verified signers with trusted publisher records.") +
-    capability("file-search", "Static analysis", "Inspect permissions and code indicators without running the app.") +
-    capability("lock-keyhole", "Private reports", "Uploads are deleted after analysis. Reports stay with your account.") +
-    '</section></div>', generation);
-  let register = false;
-  $("#auth-mode").addEventListener("click", () => {
-    register = !register;
-    $("#auth-title").textContent = $("#auth-submit").textContent = register ? "Create account" : "Sign in";
-    $("#auth-subtitle").textContent = register ? "Use a password with at least 12 characters." : "Access your private scans and reports.";
-    $("#auth-prompt").textContent = register ? "Already registered?" : "New to this workspace?";
-    $("#auth-mode").textContent = register ? "Use an existing account" : "Create an account";
-    $("#auth input[type=password]").autocomplete = register ? "new-password" : "current-password";
-    setStatus("");
-    $("#auth input[type=email]").focus();
-  });
+    '<label>Password<input required type="password" name="password" minlength="12" maxlength="128" autocomplete="' +
+    (register ? 'new-password" aria-describedby="password-hint"><small id="password-hint">Use at least 12 characters.</small>' : 'current-password">') +
+    '</label><button class="btn" type="submit" id="auth-submit">' + (register ? "Create account" : title) + '</button>' +
+    statusLine + '</form><div class="auth-footer">' + (register ? "Already registered?" : "New to this workspace?") +
+    ' <a href="' + alternate + '">' + (register ? "Sign in" : "Create an account") + '</a></div>' +
+    '<a class="auth-back" href="#home">Back to home</a></section>', generation);
   $("#auth").addEventListener("submit", async (event) => {
     event.preventDefault();
     const body = Object.fromEntries(new FormData(event.currentTarget));
@@ -111,9 +99,10 @@ function auth(generation) {
     try {
       if (register) await request("/auth/register", {method:"POST", body});
       state.user = await request("/auth/login", {method:"POST", body});
-      go(location.hash || "#dashboard");
+      if (generation === state.generation) go("#" + next);
+      else render();
     } catch (error) {
-      setStatus(error.message, true);
+      if (generation === state.generation) setStatus(error.message, true);
     } finally {
       button.disabled = false;
     }
@@ -468,24 +457,45 @@ function setMenu(open) {
 async function render() {
   clearTimeout(timer);
   const generation = ++state.generation;
-  const route = location.hash.slice(1) || "dashboard";
-  document.body.dataset.view = state.user ? "workspace" : "welcome";
-  sidebar.hidden = !state.user;
-  logoutButton.hidden = !state.user;
+  let [route, query] = (location.hash.slice(1) || "home").split("?", 2);
+  const authRoute = route === "signin" || route === "register";
+  const requestedNext = new URLSearchParams(query).get("next");
+  const next = Object.hasOwn(routeNames, requestedNext) ? requestedNext : "dashboard";
+  if (!state.sessionReady && route !== "home") {
+    mount('<p class="status" role="status">Loading…</p>', generation);
+    return;
+  }
+  if (authRoute && state.user) return go("#" + next);
+  const workspaceRoute = Object.hasOwn(routeNames, route) || route.startsWith("scan/");
+  if (!authRoute && (!workspaceRoute || !state.user)) {
+    if (route !== "home") window.history.replaceState(null, "", location.pathname + location.search);
+    route = "home";
+  }
+  const workspace = Boolean(state.user && workspaceRoute && route !== "home");
+  document.body.dataset.view = workspace ? "workspace" : "welcome";
+  sidebar.hidden = !workspace;
+  logoutButton.hidden = !workspace;
+  publicAccess.hidden = workspace || authRoute;
+  publicAccess.href = state.user ? "#dashboard" : "#signin";
+  publicAccess.textContent = state.user ? "Workspace" : "Sign in";
   document.getElementById("admin-link").hidden = state.user?.role !== "admin";
   document.getElementById("profile-email").textContent = state.user?.email || "";
   document.getElementById("profile-initial").textContent = (state.user?.email || "").slice(0, 1).toUpperCase();
   const navRoute = route.startsWith("scan/") ? "history" : route;
   const pageName = route.startsWith("scan/") ? "Scan details" : (Object.hasOwn(routeNames, route) ? routeNames[route] : "Overview");
   document.getElementById("breadcrumb").innerHTML = '<span>Workspace / </span><strong>' + pageName + '</strong>';
-  document.title = state.user ? pageName + " | AppTrust Sentinel" : "AppTrust Sentinel";
+  const title = workspace ? pageName : {signin:"Sign in", register:"Create an account"}[route];
+  document.title = title ? title + " | AppTrust Sentinel" : "AppTrust Sentinel";
   navigation.querySelectorAll("a").forEach((a) => {
     if (a.hash === "#" + navRoute) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
-  if (!state.user) {
+  if (!workspace) {
     setMenu(false);
-    return auth(generation);
+    if (authRoute) return auth(generation, route === "register", next);
+    if (!$("#home-scan")) mount(homeMarkup, generation);
+    $("#home-scan").href = state.user ? "#upload" : "#signin?next=upload";
+    return;
   }
   if (state.route !== route && (route === "history" || route === "reports")) state.history.offset = 0;
   state.route = route;
@@ -509,7 +519,7 @@ logoutButton.onclick = async () => {
   try {
     await request("/auth/logout", {method:"POST"});
     state.user = null;
-    go("#dashboard");
+    go("#home");
   } catch(error) { errorPage(error, state.generation); }
 };
 document.querySelector(".skip").onclick = (event) => { event.preventDefault(); content.focus(); };
@@ -526,4 +536,7 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("hashchange", () => { setMenu(false); render(); content.focus(); });
 workerHealth();
 setInterval(workerHealth, 15000);
-request("/auth/me").then((user) => { state.user = user; }).catch(() => {}).finally(render);
+request("/auth/me").then((user) => { state.user = user; }).catch(() => {}).finally(() => {
+  state.sessionReady = true;
+  render();
+});

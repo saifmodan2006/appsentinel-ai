@@ -12,13 +12,22 @@ test("signed APK workflow, private reports, and responsive navigation", async ({
   await expect(page.getByRole("link", {name:"Skip to content"})).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator("main")).toBeFocused();
-  await page.getByRole("button", {name:"Create an account"}).click();
+  await expect(page.getByLabel("Email")).toHaveCount(0);
+  await page.getByRole("link", {name:"Start a scan"}).click();
+  await expect(page).toHaveURL(/#signin\?next=upload$/);
+  await page.getByRole("link", {name:"Create an account"}).click();
+  await expect(page).toHaveURL(/#register\?next=upload$/);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", {name:"Create account", exact:true}).click();
+  await expect(page.getByRole("heading", {name:"New APK scan"})).toBeVisible();
+  await page.getByRole("link", {name:"Overview", exact:true}).click();
   await expect(page.getByRole("heading", {name:"Scan overview"})).toBeVisible();
   await expect(page.getByText("No scans match this view.")).toBeVisible();
-  await page.getByRole("link", {name:"Scan an APK"}).click();
+  await page.goto("/");
+  await expect(page.getByRole("heading", {name:"Know what’s inside an Android app."})).toBeVisible();
+  await expect(page.getByRole("link", {name:"Workspace", exact:true})).toBeVisible();
+  await page.getByRole("link", {name:"Start a scan"}).click();
   await page.getByRole("button", {name:"Upload and scan"}).click();
   await expect(page.getByText("Choose a nonempty APK file.")).toBeVisible();
   const fixture = resolve(process.env.SENTINEL_TEST_FIXTURES || "data/fixtures", "original.apk");
@@ -62,18 +71,23 @@ test("signed APK workflow, private reports, and responsive navigation", async ({
   await expect(page.getByText("$200.00", {exact:true}).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.getByRole("button", {name:"Sign out"}).click();
-  await expect(page.getByRole("heading", {name:"Sign in", exact:true})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"Know what’s inside an Android app."})).toBeVisible();
   expect((await page.request.get(protectedReport)).status()).toBe(401);
 });
 
-test("welcome screen keeps sign-in ahead of supporting content on a narrow phone", async ({page}) => {
+test("signed-out workspace links show the public home and keep sign-in separate on a narrow phone", async ({page}) => {
   await page.setViewportSize({width:320,height:720});
-  await page.goto("/");
-  await expect(page.getByRole("heading", {name:"Know what’s inside an Android app."})).toBeVisible();
-  const signIn = page.getByRole("button", {name:"Sign in", exact:true});
-  await expect(signIn).toBeVisible();
-  const capabilities = page.getByRole("heading", {name:"Signature verification"});
-  const [signInBox, capabilitiesBox] = await Promise.all([signIn.boundingBox(), capabilities.boundingBox()]);
-  expect(signInBox.y + signInBox.height).toBeLessThan(capabilitiesBox.y);
+  await page.goto("/#dashboard");
+  const home = page.getByRole("heading", {name:"Know what’s inside an Android app."});
+  await expect(home).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByLabel("Email")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.getByRole("link", {name:"Sign in", exact:true}).click();
+  await expect(page).toHaveURL(/#signin$/);
+  await expect(page.getByRole("heading", {name:"Sign in", exact:true})).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await page.getByRole("link", {name:"Back to home"}).click();
+  await expect(home).toBeVisible();
+  await expect(page.getByLabel("Email")).toHaveCount(0);
 });
