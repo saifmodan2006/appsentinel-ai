@@ -78,20 +78,20 @@ function go(hash) {
 
 function auth(generation) {
   const capability = (symbol, title, description) => '<div class="capability">' + icon(symbol) +
-    '<div><h3>' + title + '</h3><p class="muted">' + description + '</p></div></div>';
-  mount('<div class="welcome-grid"><section class="panel hero welcome-hero"><h1>Inspect Android apps before you install them.</h1>' +
-    '<p>Get an evidence-backed report on an APK’s signature, publisher identity and requested permissions.</p></section>' +
-    '<section class="panel welcome-card" aria-labelledby="auth-title">' + iconBox("key-round", "auth-icon") +
+    '<div><h2>' + title + '</h2><p class="muted">' + description + '</p></div></div>';
+  mount('<div class="welcome-grid"><section class="welcome-intro"><h1>Know what’s inside an Android app.</h1>' +
+    '<p class="welcome-lede">Inspect APK signatures, publisher records, and permission requests before you install or distribute an app.</p></section>' +
+    '<section class="panel welcome-card" aria-labelledby="auth-title">' +
     '<h2 id="auth-title">Sign in</h2><p class="muted auth-subtitle" id="auth-subtitle">Access your private scans and reports.</p>' +
     '<form id="auth"><label>Email<input required type="email" name="email" autocomplete="username" maxlength="254" autocapitalize="none" spellcheck="false"></label>' +
     '<label>Password<input required type="password" name="password" minlength="12" maxlength="128" autocomplete="current-password"></label>' +
     '<button class="btn" type="submit" id="auth-submit">Sign in</button>' + statusLine + '</form>' +
     '<div class="auth-footer"><span id="auth-prompt">New to this workspace?</span> <button class="text-button" type="button" id="auth-mode">Create an account</button></div>' +
-    '</section></div><section class="panel capabilities" aria-label="How Sentinel analyzes files">' +
+    '</section><section class="capabilities" aria-label="Checks and privacy">' +
     capability("badge-check", "Signature verification", "Compare verified signers with trusted publisher records.") +
     capability("file-search", "Static analysis", "Inspect permissions and code indicators without running the app.") +
     capability("lock-keyhole", "Private reports", "Uploads are deleted after analysis. Reports stay with your account.") +
-    '</section>', generation);
+    '</section></div>', generation);
   let register = false;
   $("#auth-mode").addEventListener("click", () => {
     register = !register;
@@ -133,19 +133,22 @@ async function dashboard(generation) {
   const data = await request("/dashboard");
   const counts = data.counts;
   const risks = data.risks;
+  const hasAssessments = Object.values(risks).some((count) => count > 0);
   const max = Math.max(1, ...Object.values(risks));
   const distribution = ["low_observed", "moderate", "high", "critical", "inconclusive"].map((name) =>
     '<div class="bar" data-risk="' + name + '"><span>' + h(human(name)) + '</span><div class="meter"><progress aria-label="' + h(human(name)) + '" max="' + max +
     '" value="' + (risks[name] || 0) + '"></progress></div><strong>' + (risks[name] || 0) + '</strong></div>').join("");
-  const card = (symbol, label, count) => '<div class="panel metric-card">' + iconBox(symbol, "metric-icon") +
-    '<div><strong class="metric">' + count + '</strong><p class="metric-label">' + label + '</p></div></div>';
-  mount('<section class="panel hero workspace-hero"><div><h1>Scan overview</h1><p>Review your Android APK assessments and the evidence behind each result.</p></div>' +
-    action("#upload", icon("scan-line") + "Scan an APK", "btn") + '</section>' +
-    '<div class="grid metric-grid">' + card("files", "Total scans", data.total) + card("circle-check", "Completed", counts.completed || 0) +
-    card("activity", "Queued or running", (counts.queued || 0) + (counts.running || 0)) +
-    card("triangle-alert", "Failed or inconclusive", (counts.failed || 0) + (risks.inconclusive || 0)) + '</div>' +
+  const metric = (label, count) => '<div class="metric-card"><dt class="metric-label">' + label +
+    '</dt><dd class="metric">' + count + '</dd></div>';
+  mount(heading("Scan overview", "Review your Android APK assessments and the evidence behind each result.",
+    action("#upload", icon("scan-line") + "Scan an APK", "btn")) +
+    '<dl class="panel metric-grid">' + metric("Total scans", data.total) + metric("Completed", counts.completed || 0) +
+    metric("Queued or running", (counts.queued || 0) + (counts.running || 0)) +
+    metric("Failed or inconclusive", (counts.failed || 0) + (risks.inconclusive || 0)) + '</dl>' +
     '<div class="split"><section class="panel">' + panelTitle("Risk distribution", "Completed scans by assessment.") +
-    '<div class="histogram">' + distribution + '</div></section><section class="panel">' + panelTitle("Recent findings") +
+    (hasAssessments ? '<div class="histogram">' + distribution + '</div>' :
+      '<p class="muted">Risk levels appear after a scan completes.</p>') +
+    '</section><section class="panel">' + panelTitle("Recent findings") +
     (data.findings.length ? '<ul class="finding-list">' + data.findings.map((item) => '<li><a href="#scan/' + encodeURIComponent(item.id) + '">' + h(item.title) +
     '</a>' + badge(item.severity) + '</li>').join("") + '</ul>' : '<div class="empty-state">' + iconBox("file-search") +
     '<p class="muted">Findings appear after completed scans.</p></div>') + '</section></div>' +

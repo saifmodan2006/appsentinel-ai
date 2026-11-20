@@ -7,7 +7,7 @@ test("signed APK workflow, private reports, and responsive navigation", async ({
   const email = randomUUID() + "@example.test";
   const password = "local-browser-" + randomUUID();
   await page.goto("/");
-  await expect(page.getByRole("heading", {name:"Inspect Android apps before you install them."})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"Know what’s inside an Android app."})).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", {name:"Skip to content"})).toBeFocused();
   await page.keyboard.press("Enter");
@@ -66,12 +66,14 @@ test("signed APK workflow, private reports, and responsive navigation", async ({
   expect((await page.request.get(protectedReport)).status()).toBe(401);
 });
 
-test("welcome screen fits a narrow phone and loads its local artwork", async ({page}) => {
+test("welcome screen keeps sign-in ahead of supporting content on a narrow phone", async ({page}) => {
   await page.setViewportSize({width:320,height:720});
-  const heroAsset = page.waitForResponse((response) => response.url().endsWith("/assets/sentinel-shield.webp"));
   await page.goto("/");
-  await expect(page.getByRole("heading", {name:"Inspect Android apps before you install them."})).toBeVisible();
-  expect((await heroAsset).ok()).toBe(true);
-  await expect(page.getByRole("button", {name:"Sign in", exact:true})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"Know what’s inside an Android app."})).toBeVisible();
+  const signIn = page.getByRole("button", {name:"Sign in", exact:true});
+  await expect(signIn).toBeVisible();
+  const capabilities = page.getByRole("heading", {name:"Signature verification"});
+  const [signInBox, capabilitiesBox] = await Promise.all([signIn.boundingBox(), capabilities.boundingBox()]);
+  expect(signInBox.y + signInBox.height).toBeLessThan(capabilitiesBox.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
