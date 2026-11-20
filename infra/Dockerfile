@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm AS base
+FROM python:3.15-slim-bookworm AS base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 SENTINEL_DATA=/data
 WORKDIR /opt/sentinel
 RUN groupadd -g 12001 sentinel && useradd -u 12001 -g 12001 -M sentinel \
