@@ -1,0 +1,16 @@
+.venv/
+.tools/
+data/
+.env
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.gradle/
+**/build/
+local.properties
+*.apk
+*.jks
+*.log
+node_modules/
+test-results/
+output/

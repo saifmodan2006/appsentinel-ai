@@ -1,0 +1,37 @@
+name: Verification
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  local-workflow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:web && npm audit
+      - run: npx playwright install --with-deps chromium
+      - run: docker build --target qa -f infra/Dockerfile -t apptrust-sentinel-qa .
+      - run: docker run --rm --network none apptrust-sentinel-qa
+      - run: docker run --rm apptrust-sentinel-qa python -m ruff check --no-cache sentinel ml scripts tests
+      - run: docker run --rm apptrust-sentinel-qa python -m pip_audit --cache-dir /tmp/pip-audit
+      - name: Export harmless fixture
+        run: |
+          mkdir -p data/fixtures
+          docker run --rm apptrust-sentinel-qa cat /fixture/output/original.apk > data/fixtures/original.apk
+      - name: Start Compose
+        run: |
+          (umask 077; printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" > .env)
+          docker compose up --build -d --wait
+      - run: npm run test:browser
+      - if: failure()
+        run: docker compose logs --tail 100
+      - if: always()
+        run: docker compose down

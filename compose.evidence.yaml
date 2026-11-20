@@ -1,0 +1,15 @@
+# Optional operator-approved artifacts. Configure files and SHA-256 values in .env.
+services:
+  worker:
+    environment:
+      SENTINEL_MODEL: ${SENTINEL_MODEL:-}
+      SENTINEL_MODEL_SHA256: ${SENTINEL_MODEL_SHA256:-}
+      SENTINEL_INDICATORS: ${SENTINEL_INDICATORS:-}
+      SENTINEL_INDICATORS_SHA256: ${SENTINEL_INDICATORS_SHA256:-}
+    volumes:
+      - type: bind
+        source: ./data/evidence
+        target: /evidence
+        read_only: true
+        bind:
+          create_host_path: false

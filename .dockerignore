@@ -1,0 +1,15 @@
+.git
+.venv
+.tools
+**/.gradle
+**/build
+data
+.env
+**/__pycache__
+.pytest_cache
+.ruff_cache
+test-results
+output
+**/node_modules
+*.apk
+*.jks

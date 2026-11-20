@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Inspect Android APKs, verify publishers, and review evidence from private static scans.">
+  <meta name="theme-color" content="#0e1423">
+  <title>AppTrust Sentinel</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body data-view="welcome">
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" hidden>
+      <a class="brand sidebar-brand" href="#dashboard" aria-label="AppTrust Sentinel dashboard">
+        <span class="brand-mark"><span class="icon icon-shield-check" aria-hidden="true"></span></span>
+        <span>AppTrust <strong>Sentinel</strong></span>
+      </a>
+      <nav id="navigation" aria-label="Main navigation">
+        <div class="nav-group">
+          <span class="nav-label">Workspace</span>
+          <a href="#dashboard"><span class="icon icon-layout-dashboard" aria-hidden="true"></span>Overview</a>
+          <a href="#upload"><span class="icon icon-scan-line" aria-hidden="true"></span>New scan</a>
+          <a href="#history"><span class="icon icon-history" aria-hidden="true"></span>Scan history</a>
+          <a href="#compare"><span class="icon icon-git-compare-arrows" aria-hidden="true"></span>Compare scans</a>
+          <a href="#reports"><span class="icon icon-files" aria-hidden="true"></span>Reports</a>
+        </div>
+        <div class="nav-group">
+          <span class="nav-label">Resources</span>
+          <a href="#catalog"><span class="icon icon-badge-check" aria-hidden="true"></span>Publisher catalog</a>
+          <a href="#operations" id="admin-link" hidden><span class="icon icon-activity" aria-hidden="true"></span>Operations</a>
+          <a href="#business"><span class="icon icon-calculator" aria-hidden="true"></span>Business calculator</a>
+          <a href="#settings"><span class="icon icon-settings-2" aria-hidden="true"></span>Settings</a>
+        </div>
+      </nav>
+      <a class="profile" href="#settings">
+        <span class="profile-initial" id="profile-initial" aria-hidden="true"></span>
+        <span class="profile-email" id="profile-email"></span>
+      </a>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-start">
+          <button id="nav-toggle" class="quiet nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">
+            <span class="icon icon-menu" aria-hidden="true"></span><span class="sr-only">Navigation</span>
+          </button>
+          <a class="brand public-brand" href="#dashboard" aria-label="AppTrust Sentinel home">
+            <span class="brand-mark"><span class="icon icon-shield-check" aria-hidden="true"></span></span>
+            <span>AppTrust <strong>Sentinel</strong></span>
+          </a>
+          <span class="breadcrumb" id="breadcrumb"></span>
+        </div>
+        <div class="topbar-end">
+          <span class="worker-health"><span class="indicator" id="worker-dot" aria-hidden="true"></span><span id="worker-status" role="status">Checking scanner</span></span>
+          <button id="logout" type="button" class="quiet" hidden><span class="icon icon-log-out" aria-hidden="true"></span>Sign out</button>
+        </div>
+      </header>
+      <main id="content" tabindex="-1"></main>
+    </div>
+  </div>
+</body>
+</html>

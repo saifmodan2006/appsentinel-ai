@@ -1,0 +1,121 @@
+name: apptrust-sentinel
+x-settings: &settings
+  SENTINEL_DATABASE: postgresql+psycopg://sentinel:${POSTGRES_PASSWORD:?Set a URL-safe POSTGRES_PASSWORD in .env}@db:5432/sentinel
+  SENTINEL_SECURE_COOKIE: ${SENTINEL_SECURE_COOKIE:-false}
+  SENTINEL_ALLOW_REGISTER: ${SENTINEL_ALLOW_REGISTER:-true}
+  SENTINEL_MAX_UPLOAD_MIB: ${SENTINEL_MAX_UPLOAD_MIB:-64}
+  SENTINEL_MAX_UNPACKED_MIB: ${SENTINEL_MAX_UNPACKED_MIB:-256}
+  SENTINEL_MAX_ENTRIES: ${SENTINEL_MAX_ENTRIES:-15000}
+  SENTINEL_TIMEOUT_SECONDS: ${SENTINEL_TIMEOUT_SECONDS:-90}
+  SENTINEL_QUEUE_LIMIT: ${SENTINEL_QUEUE_LIMIT:-24}
+  SENTINEL_RETENTION_DAYS: ${SENTINEL_RETENTION_DAYS:-30}
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: sentinel
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes: [database:/var/lib/postgresql/data]
+    networks: [jobs]
+    healthcheck:
+      test: [CMD, pg_isready, -U, sentinel, -d, sentinel]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  api:
+    build: {context: ., dockerfile: infra/Dockerfile, target: api}
+    environment: *settings
+    volumes: [private_uploads:/data]
+    depends_on:
+      db: {condition: service_healthy}
+    networks: [jobs, frontend]
+    read_only: true
+    tmpfs: [/tmp:size=32m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    pids_limit: 100
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+  worker:
+    build: {context: ., dockerfile: infra/Dockerfile, target: api}
+    command: [python, -m, sentinel.worker]
+    environment:
+      <<: *settings
+      SENTINEL_EXCHANGE: /exchange
+    volumes:
+      - private_uploads:/data
+      - parser_input:/exchange/in
+      - parser_output:/exchange/out:ro
+    depends_on:
+      db: {condition: service_healthy}
+      sandbox: {condition: service_healthy}
+    networks: [jobs]
+    read_only: true
+    tmpfs: [/tmp:size=32m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    cpus: 2
+    mem_limit: 1024m
+    pids_limit: 80
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -m, sentinel.worker, --health]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  sandbox:
+    build: {context: ., dockerfile: infra/Dockerfile, target: scanner}
+    environment:
+      SENTINEL_DATA: /tmp/sentinel
+      SENTINEL_MAX_UPLOAD_MIB: ${SENTINEL_MAX_UPLOAD_MIB:-64}
+      SENTINEL_MAX_UNPACKED_MIB: ${SENTINEL_MAX_UNPACKED_MIB:-256}
+      SENTINEL_MAX_ENTRIES: ${SENTINEL_MAX_ENTRIES:-15000}
+      SENTINEL_TIMEOUT_SECONDS: ${SENTINEL_TIMEOUT_SECONDS:-90}
+    volumes:
+      - parser_input:/exchange/in:ro
+      - parser_output:/exchange/out
+    network_mode: none
+    read_only: true
+    tmpfs: [/tmp:size=32m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    cpus: 2
+    mem_limit: 1024m
+    pids_limit: 80
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -m, sentinel.sandbox, --health]
+      interval: 4s
+      timeout: 3s
+      retries: 10
+  web:
+    build: {context: ., dockerfile: infra/web.Dockerfile}
+    depends_on:
+      api: {condition: service_healthy, restart: true}
+    ports: ["127.0.0.1:${SENTINEL_WEB_PORT:-8080}:8080"]
+    networks: [frontend]
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, wget, -qO, /dev/null, "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 4s
+      retries: 6
+networks:
+  frontend: {}
+  jobs: {internal: true}
+volumes:
+  database: {}
+  private_uploads: {}
+  parser_input: {}
+  parser_output: {}
